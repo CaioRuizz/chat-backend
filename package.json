@@ -1,0 +1,35 @@
+{
+  "name": "chat-backend",
+  "version": "1.0.0",
+  "description": "Backend do projeto de chat",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "tsc; node dist/server.js",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CaioRuizz/chat-backend.git"
+  },
+  "author": "CaioRuizz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CaioRuizz/chat-backend/issues"
+  },
+  "homepage": "https://github.com/CaioRuizz/chat-backend#readme",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/mongoose": "^5.11.97",
+    "@types/node": "^20.12.5",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.4"
+  }
+}
