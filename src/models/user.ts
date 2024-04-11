@@ -1,9 +1,9 @@
 import { Schema, model } from 'mongoose';
 
 export interface IUser {
-    email: String,
-    username: String,
-    usernameChanged: Boolean,
+    email: string,
+    username: string,
+    usernameChanged: boolean,
 }
 
 const messageSchema = new Schema<IUser>({

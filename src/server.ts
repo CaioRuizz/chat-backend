@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from "express"
+import express, { Express } from "express"
 import { connect } from 'mongoose';
 import bodyParser from "body-parser";
 import cors from 'cors';
@@ -10,7 +10,21 @@ const DB_USER = process.env.DB_USER;
 const DB_PASSWORD = process.env.DB_PASSWORD;
 const DB_URL = process.env.DB_URL;
 
-connect(`mongodb+srv://${DB_USER}:${DB_PASSWORD}@${DB_URL}/?retryWrites=true&w=majority&appName=sandbox`);
+const connectionString = `mongodb+srv://${DB_USER}:${DB_PASSWORD}@${DB_URL}/?retryWrites=true&w=majority&appName=sandbox`
+
+// console.log(connectionString)
+
+if (!DB_USER || !DB_PASSWORD || !DB_URL) {
+    console.error("É necessário definir as variáveis de ambiente do banco de dados");
+    process.exit(1);
+}
+
+connect(connectionString)
+    .then(() => console.log('Conectado ao banco de dados'))
+    .catch((e) => {
+        console.error(e)
+        process.exit(1)
+    });
 
 const app: Express = express();
 

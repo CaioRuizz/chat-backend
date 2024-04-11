@@ -1,13 +1,22 @@
 import { Request, Response } from "express";
 import User, { IUser } from "../models/user";
+import Token, {IToken} from "../models/token";
+
+const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
 
 export const login = async (req: Request, res: Response) => {
-    const email: String | undefined = req.body.email;
+    const email: string | undefined = req.body.email;
 
     if (!email) {
         return res
             .status(400)
-            .json({message: 'fromUser em branco'});
+            .json({message: 'email em branco'});
+    }
+
+    if (!email.match(emailRegex)) {
+        return res
+            .status(400)
+            .json({message: 'email inválido'});
     }
 
     const user = await User.findOne({ email });
@@ -15,18 +24,35 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
         const newUser: IUser = {
             email,
-            username: '',
+            username: 'temp',
             usernameChanged: false,
         };
 
-        await User.insertMany(newUser);
+        console.log('newUser', newUser)
+
+        await User.insertMany([newUser]);
 
         return res.status(201).json({
             message: 'Created',
         });
     }
 
-    return res.json({
-        message: 'OK',
+
+
+    if (user.usernameChanged) {
+        const newToken: IToken = {
+            user: user._id.toString(),
+        };
+        const inserted = (await Token.insertMany(newToken))[0];
+        return res.status(201).json({
+            user: user.email,
+            username: user.username,
+            token: inserted._id,
+            message: 'OK',
+        });
+    }
+
+    return res.status(400).json({
+        message: 'Erro, é necessário fornecer um usuário'
     });
 }
