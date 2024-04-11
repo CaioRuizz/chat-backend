@@ -90,15 +90,9 @@ export const listarConversas = async (req: Request, res: Response) => {
     
     const toUsernames: string[] = [];
 
-    await Promise.all(toUsersId.map((id) => {
-        return new Promise(resolve => {
-            User.findById(id).then(r => {
-                if (r) {
-                    toUsernames.push(r.username);
-                    resolve(r);
-                }
-            })
-        });
+    await Promise.all(toUsersId.map(async id => {
+        const r = await User.findById(id)
+        if (r) toUsernames.push(r.username);
     }));
 
     return res.json({
