@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Message from "../models/message";
 import User from "../models/user";
+import Token from "../models/token";
 
 export const enviaMensagem = async (req: Request, res: Response) => {
     const fromUserId: string | undefined = req.headers.token?.toString();
@@ -13,12 +14,25 @@ export const enviaMensagem = async (req: Request, res: Response) => {
         });
     }
 
-    console.log(toUsername)
-    console.log(message)
-
     if(!toUsername || !message) {
         return res.status(400).json({
             message: 'Campos message e toUsername obrigatórios',
+        });
+    }
+
+    const validaToken = await Token.findById(fromUserId);
+
+    if (!validaToken) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const fromUser = await User.findById(validaToken.user)
+
+    if (!fromUser) {
+        return res.status(403).json({
+            message: 'não autorizado',
         });
     }
 
@@ -31,7 +45,7 @@ export const enviaMensagem = async (req: Request, res: Response) => {
     }
 
     const newMessage = new Message({
-        fromUser: fromUserId,
+        fromUser: fromUser._id.toString(),
         toUser: toUser._id.toString(),
         message,
         sentAt: new Date(),
@@ -44,6 +58,50 @@ export const enviaMensagem = async (req: Request, res: Response) => {
     });
 }
 
-const listarConversas = async (req: Request, res: Response) => {
+export const listarConversas = async (req: Request, res: Response) => {
+    const token: string | undefined= req.headers.token?.toString();
+
+    if (!token) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const validaToken = await Token.findById(token);
+
+    if (!validaToken) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const fromUser = await User.findById(validaToken.user)
+
+    if (!fromUser) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const messages = await Message.find({ fromUser })
+    const toUsersId = messages
+        .map(m => m.toUser)
+        .filter((value, index, array) => array.indexOf(value) === index); //deduplica
     
+    const toUsernames: string[] = [];
+
+    await Promise.all(toUsersId.map((id) => {
+        return new Promise(resolve => {
+            User.findById(id).then(r => {
+                if (r) {
+                    toUsernames.push(r.username);
+                    resolve(r);
+                }
+            })
+        });
+    }));
+
+    return res.json({
+        chatsUsername: toUsernames,
+    })
 }
