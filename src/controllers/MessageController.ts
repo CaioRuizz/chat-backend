@@ -83,19 +83,73 @@ export const listarConversas = async (req: Request, res: Response) => {
         });
     }
 
-    const messages = await Message.find({ fromUser })
+    const messages = await Message.find({ fromUser });
     const toUsersId = messages
-        .map(m => m.toUser)
-        .filter((value, index, array) => array.indexOf(value) === index); //deduplica
+        .map(m => m.toUser);
     
     const toUsernames: string[] = [];
 
     await Promise.all(toUsersId.map(async id => {
-        const r = await User.findById(id)
+        const r = await User.findById(id);
         if (r) toUsernames.push(r.username);
     }));
 
     return res.json({
-        chatsUsername: toUsernames,
-    })
+        chatsUsername: [...new Set(toUsernames)],
+    });
+}
+
+export const lerConversa = async (req: Request, res: Response) => {
+    const token: string | undefined = req.headers.token?.toString();
+
+    const toUsername: string | undefined = req.params.username?.toString();
+
+    if (!toUsername) {
+        return res.status(400).json({
+            message: 'É necessário fornecer toUsername no endpoint'
+        })
+    }
+
+    
+    if (!token) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const toUser = await User.findOne({ username: toUsername });
+
+    if (!toUser) {
+        return res.status(404).json({
+            message: `Nenhum usuário encontrado com o nome ${toUsername}`
+        })
+    }
+
+    const validaToken = await Token.findById(token);
+
+    if (!validaToken) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const fromUser = await User.findById(validaToken.user)
+
+    if (!fromUser) {
+        return res.status(403).json({
+            message: 'não autorizado',
+        });
+    }
+
+    const sentMessages = (await Message.find({ fromUser, toUser }))
+        .map(m => ({ message: m.message, sentAt: m.sentAt, sent: true, received: false }));
+
+    const receivedMessages = (await Message.find({ toUser: fromUser, fromUser: toUser }))
+        .map(m => ({ message: m.message, sentAt: m.sentAt, sent: false, received: true }));
+
+    const messages = [...sentMessages, ...receivedMessages]
+
+    const result = messages.sort((a, b) => Number.parseInt(a.sentAt.valueOf()) -  Number.parseInt(b.sentAt.valueOf()));
+
+    return res.json(result);
 }
