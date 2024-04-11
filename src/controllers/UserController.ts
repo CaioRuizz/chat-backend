@@ -10,7 +10,7 @@ export const login = async (req: Request, res: Response) => {
     if (!email) {
         return res
             .status(400)
-            .json({message: 'email em branco'});
+            .json({message: 'É necessário informar o email no body'});
     }
 
     if (!email.match(emailRegex)) {
@@ -28,12 +28,10 @@ export const login = async (req: Request, res: Response) => {
             usernameChanged: false,
         };
 
-        console.log('newUser', newUser)
-
-        await User.insertMany([newUser]);
+        await User.insertMany(newUser);
 
         return res.status(201).json({
-            message: 'Created',
+            message: 'Usuário criado, altere o nome para conseguir logar',
         });
     }
 
@@ -53,6 +51,42 @@ export const login = async (req: Request, res: Response) => {
     }
 
     return res.status(400).json({
-        message: 'Erro, é necessário fornecer um usuário'
+        message: 'Erro, é necessário fornecer um usuário antes de realizar login'
+    });
+}
+
+export const alteraUsername = async (req: Request, res: Response) => {
+    const email: string | undefined = req.body.email;
+    const username: string | undefined = req.body.username;
+
+    if (!email || !username) {
+        return res.status(400).json({
+            message: 'É necessário informar o email e o username no body'
+        })
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return res.status(404).json({
+            message: 'Nenhum usuário com esse email foi encontrado',
+        });
+    }
+
+    const usernameJaUtilizado = await User.findOne({ username });
+
+    if (usernameJaUtilizado && usernameJaUtilizado.email !== email) {
+        return res.status(400).json({
+            message: 'Username já está em uso',
+        });
+    }
+
+    user.username = username;
+    user.usernameChanged = true;
+
+    await user.save();
+
+    return res.json({
+        message: 'Username alterado com sucesso!'
     });
 }
