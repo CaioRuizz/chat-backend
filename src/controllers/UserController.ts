@@ -5,7 +5,7 @@ import Token, {IToken} from "../models/token";
 const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
 
 export const login = async (req: Request, res: Response) => {
-    const email: string | undefined = req.body.email;
+    const email: string | undefined = req.body.email?.toString();
 
     if (!email) {
         return res
@@ -56,8 +56,8 @@ export const login = async (req: Request, res: Response) => {
 }
 
 export const alteraUsername = async (req: Request, res: Response) => {
-    const email: string | undefined = req.body.email;
-    const username: string | undefined = req.body.username;
+    const email: string | undefined = req.body.email?.toString();
+    const username: string | undefined = req.body.username?.toString();
 
     if (!email || !username) {
         return res.status(400).json({
