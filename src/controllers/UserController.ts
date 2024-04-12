@@ -42,7 +42,7 @@ export const login = async (req: Request, res: Response) => {
             user: user._id.toString(),
         };
         const inserted = (await Token.insertMany(newToken))[0];
-        return res.status(201).json({
+        return res.status(200).json({
             user: user.email,
             username: user.username,
             token: inserted._id,
