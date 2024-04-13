@@ -50,7 +50,7 @@ export const login = async (req: Request, res: Response) => {
         });
     }
 
-    return res.status(400).json({
+    return res.status(403).json({
         message: 'Erro, é necessário fornecer um usuário antes de realizar login'
     });
 }
