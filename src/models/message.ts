@@ -5,6 +5,7 @@ export interface IMessage {
     toUser: String,
     message: String,
     sentAt: String,
+    all: Boolean
 }
 
 const messageSchema = new Schema<IMessage>({
@@ -16,7 +17,7 @@ const messageSchema = new Schema<IMessage>({
     toUser: {
         type: Schema.Types.ObjectId,
         ref: "User",
-        required: true,
+        required: false,
     },
     message: {
         type: String,
@@ -26,6 +27,11 @@ const messageSchema = new Schema<IMessage>({
         type: Date,
         required: true,
     },
+    all: {
+        type: Boolean,
+        required: false,
+        default: false,
+    }
 });
 
 const Message = model('Message', messageSchema);

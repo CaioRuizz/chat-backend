@@ -1,12 +1,15 @@
 import { Request, Response } from "express";
 import Message from "../models/message";
-import User from "../models/user";
+import User, {IUser} from "../models/user";
 import Token from "../models/token";
+import user from "../models/user";
 
 export const enviaMensagem = async (req: Request, res: Response) => {
     const fromUserId: string | undefined = req.headers.token?.toString();
     const toUsername: string | undefined = req.body.toUsername?.toString();
     const message: string | undefined = req.body.message?.toString();
+    const all: boolean = req.body.all ?? false;
+
 
     if (!fromUserId) {
         return res.status(403).json({
@@ -14,7 +17,7 @@ export const enviaMensagem = async (req: Request, res: Response) => {
         });
     }
 
-    if(!toUsername || !message) {
+    if(toUsername == undefined || !message) {
         return res.status(400).json({
             message: 'Campos message e toUsername obrigatórios',
         });
@@ -38,7 +41,7 @@ export const enviaMensagem = async (req: Request, res: Response) => {
 
     const toUser = await User.findOne({ username: toUsername });
 
-    if (!toUser) {
+    if (!toUser && !all) {
         return res.status(404).json({
             message: 'toUsername fornecido não representa nenhum usuário'
         });
@@ -46,9 +49,10 @@ export const enviaMensagem = async (req: Request, res: Response) => {
 
     const newMessage = new Message({
         fromUser: fromUser._id.toString(),
-        toUser: toUser._id.toString(),
+        toUser: toUser?._id.toString(),
         message,
         sentAt: new Date(),
+        all,
     });
     
     await newMessage.save();
@@ -84,12 +88,19 @@ export const listarConversas = async (req: Request, res: Response) => {
     }
 
     const messages = await Message.find({ fromUser });
+    const receivedMessages = await Message.find({ toUser: fromUser })
+
+    // console.log(receivedMessages)
+
     const toUsersId = messages
         .map(m => m.toUser);
+
+    const fromUsersId = receivedMessages
+        .map(m => m.fromUser);
     
     const toUsernames: string[] = [];
 
-    await Promise.all(toUsersId.map(async id => {
+    await Promise.all([...toUsersId, ...fromUsersId].map(async id => {
         const r = await User.findById(id);
         if (r) toUsernames.push(r.username);
     }));
@@ -104,25 +115,10 @@ export const lerConversa = async (req: Request, res: Response) => {
 
     const toUsername: string | undefined = req.params.username?.toString();
 
-    if (!toUsername) {
-        return res.status(400).json({
-            message: 'É necessário fornecer toUsername no endpoint'
-        })
-    }
-
-    
     if (!token) {
         return res.status(403).json({
             message: 'não autorizado',
         });
-    }
-
-    const toUser = await User.findOne({ username: toUsername });
-
-    if (!toUser) {
-        return res.status(404).json({
-            message: `Nenhum usuário encontrado com o nome ${toUsername}`
-        })
     }
 
     const validaToken = await Token.findById(token);
@@ -141,11 +137,43 @@ export const lerConversa = async (req: Request, res: Response) => {
         });
     }
 
+    // console.log(fromUser._id.toString())
+
+    if (!toUsername) {
+        const data = await Message.find({ all: true }).populate('fromUser').exec();
+
+        const sentMessages = (data
+            .map(m => ({
+                message: m.message,
+                sentAt: m.sentAt,
+                // @ts-ignore
+                sentBy: m.fromUser.username,
+                // @ts-ignore
+                sent: (m.fromUser.username == fromUser.username),
+                // @ts-ignore
+                received: !(m.fromUser.username == fromUser.username)
+            })));
+
+
+        return res.status(200).json(sentMessages)
+    }
+
+
+    const toUser = await User.findOne({ username: toUsername });
+
+    if (!toUser) {
+        return res.status(404).json({
+            message: `Nenhum usuário encontrado com o nome ${toUsername}`
+        })
+    }
+
     const sentMessages = (await Message.find({ fromUser, toUser }))
-        .map(m => ({ message: m.message, sentAt: m.sentAt, sent: true, received: false }));
+        .map(m => ({ message: m.message, sentAt: m.sentAt, sent: true, received: false, all: m.all }))
+        .filter(m => !m.all);
 
     const receivedMessages = (await Message.find({ toUser: fromUser, fromUser: toUser }))
-        .map(m => ({ message: m.message, sentAt: m.sentAt, sent: false, received: true }));
+        .map(m => ({ message: m.message, sentAt: m.sentAt, sent: false, received: true, all: m.all }))
+        .filter(m => !m.all);
 
     const messages = [...sentMessages, ...receivedMessages]
 
@@ -153,3 +181,4 @@ export const lerConversa = async (req: Request, res: Response) => {
 
     return res.json(result);
 }
+

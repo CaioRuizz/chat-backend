@@ -1,17 +1,19 @@
 import { Router, Request, Response } from "express"
-import { alteraUsername, login } from "./controllers/UserController";
+import {listaUsuarios, login} from "./controllers/UserController";
 import { enviaMensagem, lerConversa, listarConversas } from "./controllers/MessageController";
 
 const router = Router();
 
 router.post('/login', login);
 
-router.post('/altera-username', alteraUsername);
+router.get('/lista-usuarios', listaUsuarios);
 
 router.post('/envia-mensagem', enviaMensagem);
 
 
 router.get('/lista-conversas', listarConversas);
+
+router.get('/ler-conversa/', lerConversa);
 
 router.get('/ler-conversa/:username', lerConversa);
 

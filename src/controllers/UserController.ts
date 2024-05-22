@@ -1,92 +1,43 @@
 import { Request, Response } from "express";
 import User, { IUser } from "../models/user";
 import Token, {IToken} from "../models/token";
-
-const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
+import token from "../models/token";
 
 export const login = async (req: Request, res: Response) => {
-    const email: string | undefined = req.body.email?.toString();
+    const username: string | undefined = req.body.username?.toString();
 
-    if (!email) {
+    console.log(username)
+
+    if (!username) {
         return res
             .status(400)
-            .json({message: 'É necessário informar o email no body'});
+            .json({message: 'É necessário informar o username no body'});
     }
 
-    if (!email.match(emailRegex)) {
-        return res
-            .status(400)
-            .json({message: 'email inválido'});
-    }
-
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ username });
 
     if (!user) {
-        const newUser: IUser = {
-            email,
-            username: 'temp',
-            usernameChanged: false,
-        };
-
-        await User.insertMany(newUser);
-
-        return res.status(201).json({
-            message: 'Usuário criado, altere o nome para conseguir logar',
+        user = new User({
+            username,
         });
+
+        await user.save();
     }
 
+    const newToken = new Token({
+        user: user._id.toString(),
+    });
 
+    const inserted = await newToken.save();
 
-    if (user.usernameChanged) {
-        const newToken: IToken = {
-            user: user._id.toString(),
-        };
-        const inserted = (await Token.insertMany(newToken))[0];
-        return res.status(201).json({
-            user: user.email,
-            username: user.username,
-            token: inserted._id,
-            message: 'OK',
-        });
-    }
-
-    return res.status(400).json({
-        message: 'Erro, é necessário fornecer um usuário antes de realizar login'
+    return res.status(201).json({
+        username: user.username,
+        token: inserted._id,
+        message: 'OK',
     });
 }
 
-export const alteraUsername = async (req: Request, res: Response) => {
-    const email: string | undefined = req.body.email?.toString();
-    const username: string | undefined = req.body.username?.toString();
-
-    if (!email || !username) {
-        return res.status(400).json({
-            message: 'É necessário informar o email e o username no body'
-        })
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-        return res.status(404).json({
-            message: 'Nenhum usuário com esse email foi encontrado',
-        });
-    }
-
-    const usernameJaUtilizado = await User.findOne({ username });
-
-    if (usernameJaUtilizado && usernameJaUtilizado.email !== email) {
-        return res.status(400).json({
-            message: 'Username já está em uso',
-        });
-    }
-
-    user.username = username;
-    user.usernameChanged = true;
-
-    await user.save();
-
-    return res.json({
-        message: 'Username alterado com sucesso!'
-    });
+export const listaUsuarios = async (req: Request, res: Response) =>  {
+    const users = await User.find({})
+    return res.status(200).json(users.map(u => ({username: u.username})))
 }
