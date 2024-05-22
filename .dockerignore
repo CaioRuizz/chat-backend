@@ -1,0 +1,6 @@
+README.md
+LICENSE
+.gitpod.yml
+node_modules/
+dist/
+.gitignore
