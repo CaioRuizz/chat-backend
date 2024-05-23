@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import Message from "../models/message";
-import User, {IUser} from "../models/user";
+import User from "../models/user";
 import Token from "../models/token";
-import user from "../models/user";
 
 export const enviaMensagem = async (req: Request, res: Response) => {
     const fromUserId: string | undefined = req.headers.token?.toString();
